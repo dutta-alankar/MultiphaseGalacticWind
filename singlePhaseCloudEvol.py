@@ -25,9 +25,8 @@
 #   - v_circ0        = 150 km/s     (circular velocity of external isothermal gravitational potential)
 #
 # Edits (Ritali, Alankar, Prateek): 
-#   - Solving for the time evolution of relative velocity, mass and metallicity for "single cloud framework".
-#   - adding metallicity dependence in calculation of mean molecular mass.
-#   - correcting for ch**0.5 factor in the denominator of the mass loss rate equation.
+#   - Solving for the time evolution of relative velocity, mass, and metallicity for "single cloud framework".
+#   - Adding metallicity dependence in the calculation of mean molecular mass.
 ################################################################
 
 
@@ -85,8 +84,8 @@ kpc     = 1.0e3 * pc
 Msun    = 2.e33
 #mu      = 0.62 
 #muH     = 1/0.75
-X_solar, Y_solar, Z_solar = 0.71, 0.27, 0.02
-#X_solar, Y_solar, Z_solar    = 0.7154, 0.2703, 0.0143 # solar metallicity
+#X_solar, Y_solar, Z_solar = 0.71, 0.27, 0.02
+X_solar, Y_solar, Z_solar    = 0.7154, 0.2703, 0.0143 # solar metallicity
 #mu        = 1./(2*X+0.75*Y+0.5625*Z)
 
 # ********************************************************************************* #
