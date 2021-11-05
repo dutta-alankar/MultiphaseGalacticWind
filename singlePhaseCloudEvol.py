@@ -204,7 +204,7 @@ def Onephase_Cloud_Evo(t, state):
     
     p_dot_drag   = 0.5 * drag_coeff * rho_wind * np.pi * v_rel**2 * r_cloud**2 * np.where(M_cloud>M_cloud_min, 1, 0)
 
-    # cloud gradients
+    # cloud evolution
     Mdot_cloud   = np.where(M_cloud > M_cloud_min, Mdot_grow - Mdot_loss, 0)
 
     vdot_cloud = ((p_dot_drag + v_rel*Mdot_grow ) / M_cloud ) * np.where(M_cloud>M_cloud_min, 1, 0)
