@@ -5,7 +5,7 @@
 # Brief: This code calculates the structure of multiphase galactic winds.
 #
 # Execution:
-# >> python MultiphaseGalacticWind.py
+# >> python singlePhaseCloudEvol.py
 #
 # Output: a 9 panel figure showing the properties of a multiphase galactic wind relative to a single phase galactic wind 
 # 
