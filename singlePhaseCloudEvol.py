@@ -36,7 +36,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from scipy.integrate import solve_ivp
-import cmasher as cmr
+#import cmasher as cmr
 from matplotlib.lines import Line2D
 import seaborn as sns
 
@@ -66,8 +66,8 @@ matplotlib.rcParams["figure.dpi"] = 300
 plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = True
 plt.rcParams['xtick.labeltop'] = False
 plt.rcParams['ytick.labelright'] = False
-plt.rc('text', usetex=True)
-plt.rc('text.latex', preamble=r'\usepackage{cmbright}  \usepackage[T1]{fontenc}')
+#plt.rc('text', usetex=True)
+#plt.rc('text.latex', preamble=r'\usepackage{cmbright}  \usepackage[T1]{fontenc}')
 plt.rc('legend',fontsize=5) # using a named size
 
 ## Defining useful constants
@@ -179,6 +179,7 @@ def Onephase_Cloud_Evo(t, state):
     global T_wind
     global f_turb0
     global TurbulentVelocityChiPower
+    global ColdTurbulenceChiPower
     global M_cloud_min
     global drag_coeff
 
@@ -200,7 +201,7 @@ def Onephase_Cloud_Evo(t, state):
     AreaBoost    = chi**CoolingAreaChiPower
     v_turb_cold  = v_turb * chi**ColdTurbulenceChiPower
     Mdot_grow    = Mdot_coefficient * 3.0 * M_cloud * v_turb * AreaBoost / (r_cloud * chi) * np.where( ksi < 1, ksi**0.5, ksi**0.25 )
-    Mdot_loss    = Mdot_coefficient * 3.0 * M_cloud * v_turb_cold / (AreaBoost * r_cloud) #correction for chi**0.5 factor
+    Mdot_loss    = Mdot_coefficient * 3.0 * M_cloud * v_turb_cold / r_cloud
     
     p_dot_drag   = 0.5 * drag_coeff * rho_wind * np.pi * v_rel**2 * r_cloud**2 * np.where(M_cloud>M_cloud_min, 1, 0)
 
