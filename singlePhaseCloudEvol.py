@@ -12,14 +12,15 @@
 # Overview:
 # - The code calculates the structure of a cloud moving relative to a to a fixed single phase background wind. 
 # - The default values are:
-#   - M_cloud_init   = 10^3 Msun    (initial cloud mass) [set by xi values in code]
-#   - v_cloud_init   = 0. km/s  (initial cloud velocity)
+#   - M_cloud_init   = [set by xi values in code] (initial cloud mass) 
+#   - v_cloud_init   = 0. km/s                    (initial cloud velocity)
 #   - Pressure       = 10^3 * kb
-#   - chi            = 100      (density contrast)
+#   - chi            = 100                        (density contrast)
 #   - T_wind         = 10^6 K                   
-#   - v_wind         = 10^3 km/s  (wind velocity)  
-#   - Z_wind         = 1 * Z_solar  (wind metallicity)
-#   - Z_cloud_init   = 0.1 * Z_solar      (initial cloud metallicity)
+#   - v_wind         = 10^3 km/s                  (wind velocity)  
+#   - Z_wind         = 1 * Z_solar                (wind metallicity)
+#   - Z_cloud_init   = 0.1 * Z_solar              (initial cloud metallicity)
+#   - f_turb         = 0.1
 #
 # Edits (Ritali, Alankar, Prateek): 
 #   - Solving for the time evolution of relative velocity, mass, and metallicity for "single cloud framework".
@@ -65,7 +66,7 @@ plt.rcParams['xtick.labeltop'] = False
 plt.rcParams['ytick.labelright'] = False
 #plt.rc('text', usetex=True)
 #plt.rc('text.latex', preamble=r'\usepackage{cmbright}  \usepackage[T1]{fontenc}')
-plt.rc('legend',fontsize=5) # using a named size
+plt.rc('legend',fontsize=12) # using a named size
 
 ## Defining useful constants
 gamma   = 5/3.
@@ -81,7 +82,7 @@ kpc     = 1.0e3 * pc
 Msun    = 2.e33
 #mu      = 0.62 
 #muH     = 1/0.75
-#X_solar, Y_solar, Z_solar = 0.71, 0.27, 0.02
+#X_solar, Y_solar, Z_solar = 0.75, 0.23, 0.02
 X_solar, Y_solar, Z_solar    = 0.7154, 0.2703, 0.0143 # solar metallicity
 #mu        = 1./(2*X+0.75*Y+0.5625*Z)
 
@@ -132,36 +133,6 @@ def tcool_P(T,P, metallicity):
     nH = np.where(nH<10**-8, 10**-8, nH)
     return (1/(gamma-1)) * (muH/mu) * kb * T / ( nH_actual * Lambda_z0((np.log10(nH),np.log10(T), metallicity))) #correction of pre-factor
 
-def Lambda_T_P(T,P, metallicity):
-    """
-    cooling curve function as a function of
-    T in units of K
-    P in units of K * cm**-3
-    metallicity in units of solar metallicity
-    above nH = 0.9 * cm**-3 there is no more density dependence 
-    """
-    _, _, _, mu, muH = fractionMetallicity(metallicity)
-    nH = P/T*(mu/muH)
-    if nH > 0.9:
-        nH = 0.9
-    return Lambda_z0((np.log10(nH),np.log10(T), metallicity))
-Lambda_T_P  = np.vectorize(Lambda_T_P)
-
-def Lambda_P_rho(P, rho, metallicity):
-    """
-    cooling curve function as a function of
-    P in units of erg * cm**-3
-    rho in units of g * cm**-3
-    metallicity in units of solar metallicity
-    above nH = 0.9 * cm**-3 there is no more density dependence 
-    """
-    _, _, _, mu, muH = fractionMetallicity(metallicity)
-    nH = rho / (muH * mp)
-    T  = P/kb / (rho/(mu*mp))
-    if nH > 0.9:
-        nH = 0.9
-    return Lambda_z0((np.log10(nH),np.log10(T), metallicity))
-Lambda_P_rho  = np.vectorize(Lambda_P_rho)
 
 def Onephase_Cloud_Evo(t, state):
     """
@@ -174,9 +145,9 @@ def Onephase_Cloud_Evo(t, state):
     global Z_wind
     global T_cloud
     global T_wind
-    global f_turb0
-    global TurbulentVelocityChiPower
-    global ColdTurbulenceChiPower
+    global f_turb
+    global f_mix
+    global f_cool
     global M_cloud_min
     global drag_coeff
 
@@ -190,69 +161,31 @@ def Onephase_Cloud_Evo(t, state):
     rho_cloud    = Pressure * (mu*mp) / (kb*T_cloud) # cloud in pressure equilibrium
     chi          = rho_cloud / rho_wind              # density contrast
     r_cloud      = (M_cloud / ( 4*np.pi/3. * rho_cloud))**(1/3.) 
-    v_rel        = (v_wind-v_cloud)
-    v_turb       = f_turb0 * v_rel * chi**TurbulentVelocityChiPower
+    v_rel        = np.abs(v_wind-v_cloud)
+    v_turb       = f_turb * v_rel 
     t_cool_layer = tcool_P(T_mix, Pressure/kb, Z_mix/Z_solar)[()] 
     t_cool_layer = np.where(t_cool_layer<0, 1e10*Myr, t_cool_layer)
-    ksi          = r_cloud / (v_turb * t_cool_layer)
-    AreaBoost    = chi**CoolingAreaChiPower
-    v_turb_cold  = v_turb * chi**ColdTurbulenceChiPower
-    Mdot_grow    = Mdot_coefficient * 3.0 * M_cloud * v_turb * AreaBoost / (r_cloud * chi) * np.where( ksi < 1, ksi**0.5, ksi**0.25 )
-    Mdot_loss    = Mdot_coefficient * 3.0 * M_cloud * v_turb_cold / r_cloud
+    xi_t         = r_cloud / (v_turb * t_cool_layer) # xi evolves with time
+    v_turb_cold  = v_turb / chi**0.5
+    Mdot_grow    = f_cool * 3.0 * M_cloud * v_turb / (r_cloud * chi**0.5) * np.where( xi_t < 1, xi_t**0.5, xi_t**0.25 )
+    Mdot_loss    = f_mix * 3.0 * M_cloud * v_turb_cold / r_cloud
     
     p_dot_drag   = 0.5 * drag_coeff * rho_wind * np.pi * v_rel**2 * r_cloud**2 * np.where(M_cloud>M_cloud_min, 1, 0)
 
     # cloud evolution
     Mdot_cloud   = np.where(M_cloud > M_cloud_min, Mdot_grow - Mdot_loss, 0)
-
-    vdot_cloud = ((p_dot_drag + v_rel*Mdot_grow ) / M_cloud ) * np.where(M_cloud>M_cloud_min, 1, 0)
-
-    Zdot_cloud = ((Z_wind-Z_cloud) * Mdot_grow / M_cloud) * np.where(M_cloud>M_cloud_min, 1, 0)
+    vdot_cloud   = ((p_dot_drag + v_rel*Mdot_grow ) / M_cloud ) * np.where(M_cloud>M_cloud_min, 1, 0)
+    Zdot_cloud   = ((Z_wind-Z_cloud) * Mdot_grow / M_cloud) * np.where(M_cloud>M_cloud_min, 1, 0)
 
     return np.r_[Mdot_cloud, vdot_cloud, Zdot_cloud]
 
-def cloud_ksi(r, state):
-    """
-    function to calculate the value of ksi = t_mix / t_cool
-    """
-    global v_wind
-    global rho_wind 
-    global Pressure 
-    global Z_wind
-    global T_cloud
-    global rho_cloud
-    global chi
-    global T_wind
-    global f_turb0
-    global TurbulentVelocityChiPower
-
-    M_cloud    = state[0]
-    v_cloud    = state[1]
-    Z_cloud    = state[2]
-
-    # cloud transfer rates
-    
-    r_cloud      = (M_cloud / ( 4*np.pi/3. * rho_cloud))**(1/3.) 
-    v_rel        = (v_wind-v_cloud)
-    v_turb       = f_turb0 * v_rel * chi**TurbulentVelocityChiPower
-    
-    t_cool_layer = tcool_P(T_mix, Pressure/kb, Z_mix/Z_solar)[()] 
-    t_cool_layer = np.where(t_cool_layer<0, 1e10*Myr, t_cool_layer)
-    ksi          = r_cloud / (v_turb * t_cool_layer)
-    return ksi
-    
-CoolingAreaChiPower         =  0.5 
-ColdTurbulenceChiPower      = -0.5 
-TurbulentVelocityChiPower   =  0.0 
-Mdot_coefficient            = 1.0/3.0
-drag_coeff                  = 0.5
-f_turb0                     = 10**0.
-M_cloud_min                 = 1e-2*Msun     ## minimum mass of clouds
+f_mix                       =  1.0/3.0
+f_cool                      =  1.0/3.0
+drag_coeff                  =  0.5
+f_turb                      = 10**-1.
 
 # cold cloud initial properties
 T_cloud             = 1e4
-#log_M_cloud_init    = 3
-#M_cloud_init        = 10**log_M_cloud_init * Msun
 Z_cloud_init        = 0.1 * Z_solar 
 v_cloud_init        = 0. * km/s 
 Pressure            = 1.0e3 * kb
@@ -271,7 +204,7 @@ Z_mix        = (Z_wind*Z_cloud_init)**0.5
 
 xi0 = np.logspace(np.log10(1.e-2), np.log10(1.e2), 9) 
 
-fig1, axs = plt.subplots(figsize=(6,18), nrows= 3, ncols=2)#, sharex=True)
+fig1, axs = plt.subplots(figsize=(18,10), nrows= 3, ncols=2)#, sharex=True)
 plt.suptitle(
     "Cloud growth modelling, $C_D$=%.1f, $v_{rel}$ = %d km/s, $Z_{cl}=%.1fZ_\odot$"\
         %(drag_coeff, int((v_wind-v_cloud_init)/(km/s)), (Z_cloud_init/Z_solar) ) )
@@ -279,11 +212,12 @@ plt.suptitle(
 for xi in xi0:
     t_cool_layer  = tcool_P(T_mix, Pressure/kb, Z_mix/Z_solar)[()] 
     t_cool_layer  = np.where(t_cool_layer<0, 1e10*Myr, t_cool_layer)
-    R_cloud_init  = xi * f_turb0 * np.abs(v_wind-v_cloud_init) *  t_cool_layer
+    R_cloud_init  = xi * f_turb * np.abs(v_wind-v_cloud_init) *  t_cool_layer
     M_cloud_init  = 4 * np.pi/3 * rho_cloud * (R_cloud_init**3) 
-    print('%.3e'%(M_cloud_init/Msun))
     t_cc0         = chi**.5 * R_cloud_init / np.abs(v_wind-v_cloud_init)
-
+    
+    global M_cloud_min
+    M_cloud_min   = 1e-2*M_cloud_init     ## minimum mass of clouds below which time derivatives are set to zero
     print("R_cl0 = %.2e pc" %(R_cloud_init/pc))
     print("t_cc  = %.2e Myr"%(t_cc0/Myr))
 
@@ -353,5 +287,6 @@ for xi in xi0:
     axs[2,1].set_ylabel(r"$\rm Z_{cl}$ $\rm[Z_\odot]$")
     axs[2,1].set_xlabel("Time (Myr)")
 
-axs[2,0].legend()
+axs[1,0].legend()
+plt.savefig('singlePhaseCloudEvol.png')
 plt.show()
