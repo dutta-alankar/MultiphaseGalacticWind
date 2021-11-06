@@ -192,7 +192,7 @@ Pressure            = 1.0e3 * kb
 _, _, _, mu, muH    = fractionMetallicity(Z_cloud_init/Z_solar)
 rho_cloud           = Pressure * (mu*mp) / (kb*T_cloud) # cloud in pressure equilibrium
 
-# wind intial properties
+# wind properties
 Z_wind              = 1.0 * Z_solar
 v_wind              = 1000 * km/s 
 T_wind              = 1.0e6                   
