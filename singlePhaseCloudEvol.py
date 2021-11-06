@@ -7,22 +7,19 @@
 # Execution:
 # >> python singlePhaseCloudEvol.py
 #
-# Output: a 9 panel figure showing the properties of a multiphase galactic wind relative to a single phase galactic wind 
+# Output: a 6 panel figure showing the properties of a cloud moving relative to a fixed single phase background wind.
 # 
 # Overview:
-# - First the code calculates the structure of a single phase galactic wind in the manner of Chevalier and Clegg (1985). 
-# - Then the code calculates the structure of a multiphase galactic wind. 
+# - The code calculates the structure of a cloud moving relative to a to a fixed single phase background wind. 
 # - The default values are:
-#   - SFR            = 20 Msun/yr   (star formation rate)
-#   - eta_E          = 1            (energy loading)
-#   - eta_M          = 0.1          (initial hot phase or single pahse mass loading)
-#   - eta_M_cold     = 0.2          (initial cold phase mass loading)
 #   - M_cloud_init   = 10^3 Msun    (initial cloud mass)
-#   - v_cloud_init   = 10^1.5 km/s  (initial cloud velocity)
-#   - r_sonic        = 300 pc       (sonic radius)
-#   - Z_wind_init    = 1 * Z_solar  (initial wind metallicity)
+#   - v_cloud_init   = 0. km/s  (initial cloud velocity)
+#   - Pressure       = 10^3 * kb
+#   - chi            = 100      (density contrast)
+#   - T_wind         = 10^6 K                   
+#   - v_wind         = 10^3 km/s  (wind velocity)  
+#   - Z_wind         = 1 * Z_solar  (wind metallicity)
 #   - Z_cloud_init   = 0.1 * Z_solar      (initial cloud metallicity)
-#   - v_circ0        = 150 km/s     (circular velocity of external isothermal gravitational potential)
 #
 # Edits (Ritali, Alankar, Prateek): 
 #   - Solving for the time evolution of relative velocity, mass, and metallicity for "single cloud framework".
