@@ -12,7 +12,7 @@
 # Overview:
 # - The code calculates the structure of a cloud moving relative to a to a fixed single phase background wind. 
 # - The default values are:
-#   - M_cloud_init   = 10^3 Msun    (initial cloud mass)
+#   - M_cloud_init   = 10^3 Msun    (initial cloud mass) [set by xi values in code]
 #   - v_cloud_init   = 0. km/s  (initial cloud velocity)
 #   - Pressure       = 10^3 * kb
 #   - chi            = 100      (density contrast)
@@ -246,13 +246,13 @@ ColdTurbulenceChiPower      = -0.5
 TurbulentVelocityChiPower   =  0.0 
 Mdot_coefficient            = 1.0/3.0
 drag_coeff                  = 0.5
-f_turb0                     = 10**0
+f_turb0                     = 10**0.
 M_cloud_min                 = 1e-2*Msun     ## minimum mass of clouds
 
 # cold cloud initial properties
 T_cloud             = 1e4
-log_M_cloud_init    = 3
-M_cloud_init        = 10**log_M_cloud_init * Msun
+#log_M_cloud_init    = 3
+#M_cloud_init        = 10**log_M_cloud_init * Msun
 Z_cloud_init        = 0.1 * Z_solar 
 v_cloud_init        = 0. * km/s 
 Pressure            = 1.0e3 * kb
@@ -261,7 +261,7 @@ rho_cloud           = Pressure * (mu*mp) / (kb*T_cloud) # cloud in pressure equi
 
 # wind intial properties
 Z_wind              = 1.0 * Z_solar
-v_wind              = 1.0e3 * km/s 
+v_wind              = 1000 * km/s 
 T_wind              = 1.0e6                   
 chi                 = 100              # density contrast
 rho_wind            = rho_cloud / chi
@@ -269,7 +269,7 @@ rho_wind            = rho_cloud / chi
 T_mix        = (T_wind*T_cloud)**0.5
 Z_mix        = (Z_wind*Z_cloud_init)**0.5
 
-xi0 = np.logspace(np.log10(1.e-2), np.log10(1.e2), 9)
+xi0 = np.logspace(np.log10(1.e-2), np.log10(1.e2), 9) 
 
 fig1, axs = plt.subplots(figsize=(6,18), nrows= 3, ncols=2)#, sharex=True)
 plt.suptitle(
@@ -279,9 +279,10 @@ plt.suptitle(
 for xi in xi0:
     t_cool_layer  = tcool_P(T_mix, Pressure/kb, Z_mix/Z_solar)[()] 
     t_cool_layer  = np.where(t_cool_layer<0, 1e10*Myr, t_cool_layer)
-    R_cloud_init  = xi * f_turb0 * (v_wind-v_cloud_init) *  t_cool_layer
+    R_cloud_init  = xi * f_turb0 * np.abs(v_wind-v_cloud_init) *  t_cool_layer
     M_cloud_init  = 4 * np.pi/3 * rho_cloud * (R_cloud_init**3) 
-    t_cc0         = chi**.5 * R_cloud_init / (v_wind-v_cloud_init)
+    print('%.3e'%(M_cloud_init/Msun))
+    t_cc0         = chi**.5 * R_cloud_init / np.abs(v_wind-v_cloud_init)
 
     print("R_cl0 = %.2e pc" %(R_cloud_init/pc))
     print("t_cc  = %.2e Myr"%(t_cc0/Myr))
@@ -289,7 +290,7 @@ for xi in xi0:
     #### ICs 
     initial_conditions = np.r_[M_cloud_init, v_cloud_init, Z_cloud_init]
     t_init = 0.
-    t_stop = 5.0e3 * Myr
+    t_stop = max(25*t_cc0, 5.0e5 * Myr)
     teval = np.logspace(np.log10(1.e-2), np.log10(t_stop), 1000)
 
     ### integrate!
@@ -301,6 +302,13 @@ for xi in xi0:
     M_cloud_sol     = sol.y[0]
     v_cloud_sol     = sol.y[1]
     Z_cloud_sol     = sol.y[2]
+    ## gather solution only till the cloud mass, if lost, is 99% of the initial
+    plot_condition  = M_cloud_sol/M_cloud_init >= (1-0.99)
+    time            = time[plot_condition] 
+    M_cloud_sol     = M_cloud_sol[plot_condition] 
+    v_cloud_sol     = v_cloud_sol[plot_condition] 
+    Z_cloud_sol     = Z_cloud_sol[plot_condition] 
+    
     
 
     axs[0,0].plot(time/t_cc0, M_cloud_sol/M_cloud_init, label=r"$\xi=$ %.2f " %xi)
@@ -327,7 +335,7 @@ for xi in xi0:
     
     axs[0,1].plot(time/Myr, M_cloud_sol/Msun, label=r"$\xi=$ %.2f " %xi)
     axs[0,1].set_yscale("log")
-    axs[0,1].set_ylim(1,5.e13)
+    axs[0,1].set_ylim(1,8.e13)
     axs[0,1].set_xscale("log")
     axs[0,1].set_xlim(1.e-1,5.e3)
     axs[0,1].set_ylabel(r"$\rm M_{cl}$ $\rm[M_\odot]$")
