@@ -91,9 +91,9 @@ X_solar, Y_solar, Z_solar    = 0.7154, 0.2703, 0.0143 # solar metallicity
 def fractionMetallicity(fracZ):
     #fracZ is fraction of Solar metallicity (linear)
        
-    Xp, Yp, Zp = X_solar/(X_solar+Y_solar+fracZ*Z_solar), Y_solar/(X_solar+Y_solar+fracZ*Z_solar), fracZ*Z_solar/(X_solar+Y_solar+fracZ*Z_solar)
-    mup        = 1./(2*Xp+0.75*Yp+0.5625*Zp)
-    muHp       = mup/Xp
+    Xp, Yp, Zp = X_solar*(1-fracZ*Z_solar)/(X_solar+Y_solar), Y_solar*(1-fracZ*Z_solar)/(X_solar+Y_solar), fracZ*Z_solar
+    mup        = 1./(2*Xp+0.75*Yp+(9./16.)*Zp) #completely ionized plasma; Z varied independent of nH and nHe; Metals==Oxygen
+    muHp       = 1./Xp
     return [Xp, Yp, Zp, mup, muHp] # corrected values
     
 # ********************************************************************************* ##
